@@ -85,8 +85,9 @@ public class NaiveBayesClassifierImpl implements NaiveBayesClassifier {
   @Override
   public double p_l(Label label) {
     // TODO : Implement
-	  
-    return 0;
+	  double total = (double) businessDocsCount + sportsDocsCount;
+	  double priorProb = (label == Label.BUSINESS) ? ((double) businessDocsCount)/total: ((double) sportsDocsCount)/total;
+    return priorProb;
   }
 
   /**
