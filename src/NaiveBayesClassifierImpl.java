@@ -1,4 +1,5 @@
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 /**
@@ -12,6 +13,7 @@ public class NaiveBayesClassifierImpl implements NaiveBayesClassifier {
 	int businessDocsCount;//total number of business documents counted in training
 	int sportsDocsCount;//total number of sports documents counted in training
 	HashMap<Label, HashMap<String, Integer>> labelMap;//String is word and integer is occurance count
+	HashMap<Label, Integer> summationTermByLabel;
 	
 	
   /**
@@ -24,6 +26,10 @@ public class NaiveBayesClassifierImpl implements NaiveBayesClassifier {
 	  this.businessDocsCount = 0;
 	  this.sportsDocsCount = 0;
 	  this.labelMap = new HashMap<Label, HashMap<String, Integer>>();
+	  
+	  //gonna store all the words in the vocab so that we can calc the summation term
+	  //in the denominator of the smoothing function
+	  HashSet<String> entireVocab = new HashSet<String>();
 	  
 	  //put all the labels into the hashmap
 	  for(Label singleLabel : Label.values())
@@ -49,8 +55,26 @@ public class NaiveBayesClassifierImpl implements NaiveBayesClassifier {
 				  newWordCountPair.put(singleInstance.words[i], 1);
 			  }
 			  labelMap.put(currInstLabel, newWordCountPair);
+			  
+			  //add to the entire vocab
+			  if (!entireVocab.contains(singleInstance.words[i]))
+				  entireVocab.add(singleInstance.words[i]);
 		  }
 	  }
+	  
+	  //loop through the entire vocab to build up the vocab count by label
+	  this.summationTermByLabel = new HashMap<Label, Integer>();
+	  for (Label singleLabel : Label.values()){
+		  int countForLabel = 0;
+		  for (String singleWordInVocab : entireVocab){
+			  if (labelMap.get(singleLabel).containsKey(singleWordInVocab))
+				  countForLabel += (int) labelMap.get(singleLabel).get(singleWordInVocab);
+		  }
+		  summationTermByLabel.put(singleLabel, (Integer) countForLabel);
+	  }
+	  //for debug purposes
+	  //System.out.println(entireVocab.size() + " " + v);
+	  
   }
 
   /*
@@ -84,7 +108,7 @@ public class NaiveBayesClassifierImpl implements NaiveBayesClassifier {
    */
   @Override
   public double p_l(Label label) {
-    // TODO : Implement
+    // TODO : Implement COMPLETED, BUT NOT VERIFIED
 	  double total = (double) businessDocsCount + sportsDocsCount;
 	  double priorProb = (label == Label.BUSINESS) ? ((double) businessDocsCount)/total: ((double) sportsDocsCount)/total;
     return priorProb;
@@ -96,8 +120,12 @@ public class NaiveBayesClassifierImpl implements NaiveBayesClassifier {
    */
   @Override
   public double p_w_given_l(String word, Label label) {
-    // TODO : Implement
-    return 0;
+    // TODO : Implement COMPLETED, BUT NOT VERIFIED
+	  
+	  double condProb = (((double)labelMap.get(label).get(word))+0.00001)
+			  /(((double) this.v)*0.00001 + ((double) summationTermByLabel.get(label)));
+	  
+    return condProb;
   }
 
   /**
