@@ -121,10 +121,18 @@ public class NaiveBayesClassifierImpl implements NaiveBayesClassifier {
   @Override
   public double p_w_given_l(String word, Label label) {
     // TODO : Implement COMPLETED, BUT NOT VERIFIED
-	  
-	  double condProb = (((double)labelMap.get(label).get(word))+0.00001)
-			  /(((double) this.v)*0.00001 + ((double) summationTermByLabel.get(label)));
-	  
+	  labelMap.get(label).get(word);
+	  double condProb = 0;
+	  if (labelMap.get(label).containsKey(word)){
+		  double numerator = (((double)labelMap.get(label).get(word))+0.00001);
+		  double denominator = (((double) this.v)*0.00001 + ((double) summationTermByLabel.get(label)));
+		  condProb = numerator/denominator;
+	  }
+	  else{
+		  double numerator = (0.00001);
+		  double denominator = (((double) this.v)*0.00001 + ((double) summationTermByLabel.get(label)));
+		  condProb = numerator/denominator;
+	  }
     return condProb;
   }
 
@@ -134,7 +142,23 @@ public class NaiveBayesClassifierImpl implements NaiveBayesClassifier {
   @Override
   public ClassifyResult classify(String[] words) {
     // TODO : Implement
-    return null; 
+	  //for business
+	  double businessSum = 0.0;
+	  for (String singleWord : words){
+		  businessSum += Math.log(p_w_given_l(singleWord, Label.BUSINESS));
+	  }
+	  businessSum += Math.log(p_l(Label.BUSINESS));
+	  //for sports
+	  double sportsSum = 0.0;
+	  for (String singleWord : words){
+		  sportsSum += Math.log(p_w_given_l(singleWord, Label.SPORTS));
+	  }
+	  sportsSum += Math.log(p_l(Label.SPORTS));
+	  ClassifyResult result = new ClassifyResult();
+	  result.label = (businessSum > sportsSum) ? Label.BUSINESS: Label.SPORTS; 
+	  result.log_prob_business = businessSum;
+	  result.log_prob_sports = sportsSum;
+    return result; 
   }
   
   /*
@@ -143,7 +167,21 @@ public class NaiveBayesClassifierImpl implements NaiveBayesClassifier {
   @Override
   public ConfusionMatrix calculate_confusion_matrix(Instance[] testData){
     // TODO : Implement
-    return null;
+	  ConfusionMatrix matx; 
+	  int TP = 0, FP = 0, FN = 0, TN = 0;
+	  for (Instance singleInstance : testData){
+		  ClassifyResult singleResult = classify(singleInstance.words);
+		  if (singleResult.label == Label.SPORTS && singleInstance.label == Label.SPORTS)
+			  TP++;
+		  else if (singleResult.label == Label.BUSINESS && singleInstance.label == Label.BUSINESS)
+			  TN++;
+		  else if (singleResult.label == Label.BUSINESS && singleInstance.label == Label.SPORTS)
+			  FN++;
+		  else
+			  FP++;
+	  }
+	  matx = new ConfusionMatrix(TP, FP, FN, TN);
+    return matx;
   }
   
 }
